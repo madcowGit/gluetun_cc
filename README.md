@@ -11,9 +11,14 @@ thanks to qdm12 for the excellent [Gluetun VPN client](https://github.com/qdm12/
 | public ip | http://ipaddress:port/v1/publicip/ip | 
 | country | http://ipaddress:port/v1/publicip/ip | 
 
-# Installation
+# Installation 
+## (simple)
 * Copy to custom_component folder
 * add through UI
+
+## (symbolic link)
+* clone git repository
+* in custom_components create a symbolic link to the cloned folder
 
 ## Gluetun requirements
 # HTTP Control Server
