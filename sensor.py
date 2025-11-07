@@ -26,7 +26,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     async_add_entities([
         GluetunStatusSensor(status_coordinator),
         GluetunPublicIPSensor(public_ip_coordinator, "public_ip"),
+        GluetunPublicIPSensor(public_ip_coordinator, "region"),
         GluetunPublicIPSensor(public_ip_coordinator, "country"),
+        GluetunPublicIPSensor(public_ip_coordinator, "city"),
+        GluetunPublicIPSensor(public_ip_coordinator, "location"),
+        GluetunPublicIPSensor(public_ip_coordinator, "organization"),
+        GluetunPublicIPSensor(public_ip_coordinator, "postal_code"),
+        GluetunPublicIPSensor(public_ip_coordinator, "timezone"),
     ])
 
 class GluetunStatusCoordinator(DataUpdateCoordinator):
