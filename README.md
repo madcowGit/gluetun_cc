@@ -1,2 +1,20 @@
-# gluetun_cc
-custom component for home assistant that reads information about the VPN connection from the HTTP Control Server
+# Custom component for Home Assistant: Gluetun status
+Custom component for home assistant that reads information from [Gluetun VPN client](https://github.com/qdm12/gluetun)
+Extracts data about the VPN connection from the JSON provided by the HTTP Control Server.
+
+thanks to qdm12 for the excellent [Gluetun VPN client](https://github.com/qdm12/gluetun)
+
+# sensors
+| sensor | from link | 
+|--------|--------|
+| status | http://ipaddress:port/v1/openvpn/status |
+| public ip | http://ipaddress:port/v1/publicip/ip | 
+| country | http://ipaddress:port/v1/publicip/ip | 
+
+# Installation
+* Copy to custom_component folder
+* add through UI
+
+## Gluetun requirements
+# HTTP Control Server
+[HTTP Control Server](https://github.com/qdm12/gluetun-wiki/blob/main/setup/advanced/control-server.md) must be enabled
