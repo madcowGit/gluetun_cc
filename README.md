@@ -30,17 +30,6 @@ Copy the `custom_components/gluetun_cc/` directory into your HA `config/custom_c
 1. Go to **Settings → Devices & services → Add integration** and search for **Gluetun (custom component)**.  
 2. Enter the HTTP Control Server details.  
 3. Finish the flow; entities for VPN status, public IP, and country (if available) will be created.
-
-## Development & CI
-
-- Standard HA structure under `custom_components/gluetun_cc/`.
-- `hacs.json` at repo root for HACS metadata.
-- CI includes **HACS Action** and **hassfest** to validate the integration and get ready for default HACS inclusion.
-
-## Releases
-
-After merging changes to `main`, create a **GitHub Release** (e.g., `v0.1.0`) so HACS can present versions nicely. (Default inclusion requires a full release, not just a tag.)
-
 ## Acknowledgments
 
 - Thanks to **qdm12** for the Gluetun project.
