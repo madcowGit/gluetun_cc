@@ -1,19 +1,26 @@
-
+from typing import Any
 from homeassistant import config_entries
-import voluptuous as vol
+from .const import DOMAIN  # or from . import DOMAIN if you define it in __init__.py
 
-DOMAIN = "gluetun"
+class GluetunCcConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+    """Config flow for Gluetun CC."""
 
-class GluetunConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
-    async def async_step_user(self, user_input=None):
-        if user_input is not None:
-            return self.async_create_entry(title="Gluetun", data=user_input)
+    async def async_step_user(self, user_input: dict[str, Any] | None = None):
+        """Handle the initial step."""
+        errors: dict[str, str] = {}
 
+        if user_input is not None:
+            # validate here if you need to
+            return self.async_create_entry(
+                title="Gluetun",  # what will show in UI
+                data=user_input,  # store connection details for your component
+            )
+
+        # IMPORTANT: The step_id must correspond to an async_step_<step_id> method.
         return self.async_show_form(
             step_id="user",
-            data_schema=vol.Schema({
-                vol.Required("base_url", default="http://localhost:8111"): str
-            })
+            data_schema=...  # voluptuous schema for host/port etc.
+            # errors=errors
         )
