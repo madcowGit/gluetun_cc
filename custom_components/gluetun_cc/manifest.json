@@ -1,0 +1,11 @@
+{
+  "domain": "gluetun_cc",
+  "name": "Gluetun (custom component)",
+  "codeowners": ["@madcowGit"],
+  "config_flow": true,
+  "documentation": "https://github.com/madcowGit/gluetun_cc#readme",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/madcowGit/gluetun_cc/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}
