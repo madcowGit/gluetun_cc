@@ -1,6 +1,6 @@
 {
   "domain": "gluetun_cc",
-  "name": "Gluetun (custom component)",
+  "name": "Gluetun Status Sensor",
   "codeowners": ["@madcowGit"],
   "config_flow": true,
   "documentation": "https://github.com/madcowGit/gluetun_cc#readme",
