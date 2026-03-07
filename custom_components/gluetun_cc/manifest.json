@@ -1,11 +1,13 @@
 {
   "domain": "gluetun_cc",
   "name": "Gluetun Status Sensor",
-  "codeowners": ["@madcowGit"],
+  "codeowners": [
+    "@madcowGit"
+  ],
   "config_flow": true,
   "documentation": "https://github.com/madcowGit/gluetun_cc#readme",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/madcowGit/gluetun_cc/issues",
   "requirements": [],
-  "version": "0.2.0"
+  "version": "0.3.1"
 }

@@ -1,107 +1,145 @@
+"""Sensor platform for the Gluetun integration."""
 
-from homeassistant.components.sensor import SensorEntity
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any
+
+from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
-from datetime import timedelta
-import aiohttp
-import logging
-import json
-from urllib.parse import urljoin
+from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity, DataUpdateCoordinator
 
-_LOGGER = logging.getLogger(__name__)
+from .const import DOMAIN, MANUFACTURER, MODEL
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities):
-    base_url = entry.data.get("base_url", "http://localhost:8111")
 
-    status_url = urljoin(base_url, "/v1/openvpn/status")
-    public_ip_url = urljoin(base_url, "/v1/publicip/ip")
+GluetunConfigEntry = ConfigEntry[dict[str, object]]
 
-    status_coordinator = GluetunStatusCoordinator(hass, status_url)
-    public_ip_coordinator = GluetunPublicIPCoordinator(hass, public_ip_url)
 
-    await status_coordinator.async_refresh()
-    await public_ip_coordinator.async_refresh()
+@dataclass(frozen=True, kw_only=True)
+class GluetunSensorEntityDescription(SensorEntityDescription):
+    """Describes a Gluetun sensor entity."""
 
-    async_add_entities([
-        GluetunStatusSensor(status_coordinator),
-        GluetunPublicIPSensor(public_ip_coordinator, "public_ip"),
-        GluetunPublicIPSensor(public_ip_coordinator, "region"),
-        GluetunPublicIPSensor(public_ip_coordinator, "country"),
-        GluetunPublicIPSensor(public_ip_coordinator, "city"),
-        GluetunPublicIPSensor(public_ip_coordinator, "location"),
-        GluetunPublicIPSensor(public_ip_coordinator, "organization"),
-        GluetunPublicIPSensor(public_ip_coordinator, "postal_code"),
-        GluetunPublicIPSensor(public_ip_coordinator, "timezone"),
-    ])
+    coordinator_key: str
+    value_key: str
+    fallback_value: str = "unknown"
 
-class GluetunStatusCoordinator(DataUpdateCoordinator):
-    def __init__(self, hass, url):
-        self.url = url
-        super().__init__(
-            hass,
-            _LOGGER,
-            name="gluetun_status",
-            update_interval=timedelta(seconds=60),
+
+SENSORS: tuple[GluetunSensorEntityDescription, ...] = (
+    GluetunSensorEntityDescription(
+        key="status",
+        translation_key="status",
+        coordinator_key="status",
+        value_key="status",
+    ),
+    GluetunSensorEntityDescription(
+        key="public_ip",
+        translation_key="public_ip",
+        coordinator_key="public_ip",
+        value_key="public_ip",
+    ),
+    GluetunSensorEntityDescription(
+        key="region",
+        translation_key="region",
+        coordinator_key="public_ip",
+        value_key="region",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    GluetunSensorEntityDescription(
+        key="country",
+        translation_key="country",
+        coordinator_key="public_ip",
+        value_key="country",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    GluetunSensorEntityDescription(
+        key="city",
+        translation_key="city",
+        coordinator_key="public_ip",
+        value_key="city",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    GluetunSensorEntityDescription(
+        key="location",
+        translation_key="location",
+        coordinator_key="public_ip",
+        value_key="location",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    GluetunSensorEntityDescription(
+        key="organization",
+        translation_key="organization",
+        coordinator_key="public_ip",
+        value_key="organization",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    GluetunSensorEntityDescription(
+        key="postal_code",
+        translation_key="postal_code",
+        coordinator_key="public_ip",
+        value_key="postal_code",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    GluetunSensorEntityDescription(
+        key="timezone",
+        translation_key="timezone",
+        coordinator_key="public_ip",
+        value_key="timezone",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+)
+
+
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: GluetunConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
+    """Set up Gluetun sensor entities."""
+    coordinators: dict[str, DataUpdateCoordinator[dict[str, Any]]] = hass.data[DOMAIN][entry.entry_id]
+
+    async_add_entities(
+        GluetunSensor(
+            entry=entry,
+            coordinator=coordinators[description.coordinator_key],
+            description=description,
+        )
+        for description in SENSORS
+    )
+
+
+class GluetunSensor(CoordinatorEntity[DataUpdateCoordinator[dict[str, Any]]], SensorEntity):
+    """Representation of a Gluetun sensor."""
+
+    entity_description: GluetunSensorEntityDescription
+    _attr_has_entity_name = True
+
+    def __init__(
+        self,
+        *,
+        entry: GluetunConfigEntry,
+        coordinator: DataUpdateCoordinator[dict[str, Any]],
+        description: GluetunSensorEntityDescription,
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator)
+        self.entity_description = description
+        self._attr_unique_id = f"{entry.entry_id}_{description.key}"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, entry.entry_id)},
+            name="Gluetun",
+            manufacturer=MANUFACTURER,
+            model=MODEL,
         )
 
-    async def _async_update_data(self):
-        async with aiohttp.ClientSession() as session:
-            async with session.get(self.url) as response:
-                if response.status != 200:
-                    raise UpdateFailed(f"Error fetching status: {response.status}")
-                text = await response.text()
-                try:
-                    data = json.loads(text)
-                except json.JSONDecodeError:
-                    raise UpdateFailed("Invalid JSON response")
-                return data
-
-class GluetunPublicIPCoordinator(DataUpdateCoordinator):
-    def __init__(self, hass, url):
-        self.url = url
-        super().__init__(
-            hass,
-            _LOGGER,
-            name="gluetun_public_ip",
-            update_interval=timedelta(seconds=300),
+    @property
+    def native_value(self) -> str | None:
+        """Return the sensor state."""
+        value = self.coordinator.data.get(
+            self.entity_description.value_key,
+            self.entity_description.fallback_value,
         )
-
-    async def _async_update_data(self):
-        async with aiohttp.ClientSession() as session:
-            async with session.get(self.url) as response:
-                if response.status != 200:
-                    raise UpdateFailed(f"Error fetching public IP: {response.status}")
-                text = await response.text()
-                try:
-                    data = json.loads(text)
-                except json.JSONDecodeError:
-                    raise UpdateFailed("Invalid JSON response")
-                return data
-
-class GluetunStatusSensor(SensorEntity):
-    def __init__(self, coordinator):
-        self.coordinator = coordinator
-        self._attr_name = "Gluetun Status"
-        self._attr_unique_id = "gluetun_status_sensor"
-
-    @property
-    def state(self):
-        data = self.coordinator.data
-        if isinstance(data, dict):
-            return data.get("status", "unknown")
-        return "unknown"
-
-class GluetunPublicIPSensor(SensorEntity):
-    def __init__(self, coordinator, key):
-        self.coordinator = coordinator
-        self.key = key
-        self._attr_name = f"Gluetun {key.replace('_', ' ').title()}"
-        self._attr_unique_id = f"gluetun_{key}_sensor"
-
-    @property
-    def state(self):
-        data = self.coordinator.data
-        if isinstance(data, dict):
-            return data.get(self.key, "unknown")
-        return "unknown"
+        return None if value is None else str(value)
