@@ -1,0 +1,53 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to Gluetun Control Server",
+        "data": {
+          "base_url": "Gluetun Control Server URL"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Edit Gluetun Control Server",
+        "data": {
+          "base_url": "Gluetun Control Server URL"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "status": {
+        "name": "Status"
+      },
+      "public_ip": {
+        "name": "Public IP"
+      },
+      "region": {
+        "name": "Region"
+      },
+      "country": {
+        "name": "Country"
+      },
+      "city": {
+        "name": "City"
+      },
+      "location": {
+        "name": "Location"
+      },
+      "organization": {
+        "name": "Organization"
+      },
+      "postal_code": {
+        "name": "Postal code"
+      },
+      "timezone": {
+        "name": "Timezone"
+      }
+    }
+  }
+}
