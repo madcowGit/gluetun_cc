@@ -24,6 +24,10 @@ Copy the `custom_components/gluetun_cc/` directory into your HA `config/custom_c
 ## Requirements
 
 - A running **Gluetun** with the **HTTP Control Server** enabled and accessible (e.g., `http://<gluetun-host>:8000`).
+- Authentication is currently not implemented so you must add this in your docker config:
+
+      HTTP_CONTROL_SERVER_AUTH_DEFAULT_ROLE='{"auth":"none"}'
+NOTE: This is highly discouraged by qdm12 per: https://github.com/qdm12/gluetun-wiki/blob/main/setup/advanced/control-server.md
 
 ## Configuration (UI)
 
