@@ -1,10 +1,16 @@
 ﻿# Gluetun status – Home Assistant custom component
 
 This is a Home Assistant custom integration that reads VPN status information from a [Gluetun](https://github.com/qdm12/gluetun) instance via its **HTTP Control Server**. It exposes sensors for:
-- **OpenVPN/WireGuard status** from `/v1/openvpn/status`
 - **Public IP address** from `/v1/publicip/ip`
-- **Country** (derived from the public IP, via Gluetun)
-
+- **Country** from `/v1/publicip/ip`
+- **City** from `/v1/publicip/ip`
+- **Location** from `/v1/publicip/ip`
+- **Organization** from `/v1/publicip/ip`
+- **Postal Code** from `/v1/publicip/ip`
+- **Public Ip** from `/v1/publicip/ip`
+- **Region** from `/v1/publicip/ip`
+- **Status** from `/v1/openvpn/status`
+- **Timezone** from `/v1/publicip/ip`
 > Ensure Gluetun’s HTTP Control Server is enabled and reachable from Home Assistant. (These endpoints reflect the project’s existing behavior.)
 
 ## Installation
