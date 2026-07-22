@@ -1,0 +1,23 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "data": {
+          "instance_name": "Instance Name",
+          "base_url": "Base URL",
+          "api_key": "API Key (optional)",
+          "tunnel_name": "Tunnel Name (optional)"
+        },
+        "description": "Enter your Gluetun HTTP Control Server details."
+      },
+      "reconfigure": {
+        "data": {
+          "base_url": "Base URL",
+          "api_key": "API Key (optional)",
+          "tunnel_name": "Tunnel Name (optional)"
+        },
+        "description": "Update your Gluetun HTTP Control Server connection details."
+      }
+    }
+  }
+}
