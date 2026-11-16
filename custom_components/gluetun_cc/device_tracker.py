@@ -1,123 +1,99 @@
-from homeassistant.components.device_tracker import TrackerEntity, SourceType
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+"""Device tracker for Gluetun's public IP geolocation."""
+
+from __future__ import annotations
+
+from typing import Any
+
+from homeassistant.components.device_tracker import SourceType, TrackerEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from datetime import timedelta
-import aiohttp
-import logging
-import json
-from urllib.parse import urljoin
+from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import CONF_INSTANCE_NAME, CONF_BASE_URL, CONF_API_KEY, CONF_TUNNEL_NAME
-
-_LOGGER = logging.getLogger(__name__)
+from . import _entry_settings
+from .const import DOMAIN
+from .coordinator import GluetunPublicIpCoordinator
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities):
-    instance_name = entry.data.get(CONF_INSTANCE_NAME, "gluetun")
-    base_url = entry.data.get(CONF_BASE_URL, "http://localhost:8111")
-    api_key = entry.data.get(CONF_API_KEY, "")
-    tunnel_name = entry.data.get(CONF_TUNNEL_NAME, "")
-    display_name = tunnel_name if tunnel_name else instance_name
-
-    public_ip_url = urljoin(base_url, "/v1/publicip/ip")
-    coordinator = GluetunPublicIPCoordinator(hass, public_ip_url, instance_name, api_key)
-
-    await coordinator.async_refresh()
-
-    async_add_entities([
-        GluetunTrackerEntity(coordinator, display_name),
-    ])
-
-
-class GluetunPublicIPCoordinator(DataUpdateCoordinator):
-    def __init__(self, hass, url, instance_name="gluetun", api_key=""):
-        self.url = url
-        self.instance_name = instance_name
-        self.api_key = api_key
-        super().__init__(
-            hass,
-            _LOGGER,
-            name=f"gluetun_tracker_{instance_name}",
-            update_interval=timedelta(seconds=300),
-        )
-
-    async def _async_update_data(self):
-        headers = {}
-        if self.api_key:
-            headers["X-API-Key"] = self.api_key
-        async with aiohttp.ClientSession() as session:
-            async with session.get(self.url, headers=headers) as response:
-                if response.status != 200:
-                    raise UpdateFailed(f"Error fetching public IP: {response.status}")
-                text = await response.text()
-                try:
-                    data = json.loads(text)
-                except json.JSONDecodeError:
-                    raise UpdateFailed("Invalid JSON response")
-                return data
+async def async_setup_entry(
+    hass: HomeAssistant, entry: ConfigEntry, async_add_entities
+) -> None:
+    """Set up the Gluetun location tracker."""
+    instance_name, _, _, tunnel_name = _entry_settings(entry)
+    display_name = tunnel_name or instance_name
+    data = hass.data[DOMAIN][entry.entry_id]
+    coordinator: GluetunPublicIpCoordinator = data["public_ip_coordinator"]
+    async_add_entities(
+        [
+            GluetunTrackerEntity(
+                coordinator,
+                display_name,
+                DeviceInfo(
+                    identifiers={(DOMAIN, entry.entry_id)},
+                    name=display_name,
+                    manufacturer="Gluetun",
+                    configuration_url=data["base_url"],
+                ),
+            )
+        ]
+    )
 
 
-class GluetunTrackerEntity(TrackerEntity):
-    def __init__(self, coordinator, display_name="gluetun"):
-        self.coordinator = coordinator
-        self.instance_name = display_name
-        self._attr_name = f"Gluetun {display_name} VPN Location"
+class GluetunTrackerEntity(
+    CoordinatorEntity[GluetunPublicIpCoordinator], TrackerEntity
+):
+    """Represent the VPN's approximate public geolocation."""
+
+    _attr_icon = "mdi:vpn"
+
+    def __init__(
+        self,
+        coordinator: GluetunPublicIpCoordinator,
+        display_name: str,
+        device_info: DeviceInfo,
+    ) -> None:
+        super().__init__(coordinator)
+        self._attr_name = f"Gluetun {display_name} VPN location"
         self._attr_unique_id = f"gluetun_{display_name}_tracker"
-        self._attr_icon = "mdi:vpn"
+        self._attr_device_info = device_info
 
     @property
-    def source_type(self):
+    def source_type(self) -> SourceType:
+        """Return the source type for this tracker."""
         return SourceType.GPS
 
+    def _coordinates(self) -> tuple[float, float] | None:
+        """Parse and validate latitude and longitude from Gluetun's location field."""
+        location = self.coordinator.data.get("location")
+        if not isinstance(location, str):
+            return None
+        try:
+            latitude_text, longitude_text = location.split(",", maxsplit=1)
+            latitude, longitude = float(latitude_text.strip()), float(longitude_text.strip())
+        except (ValueError, TypeError):
+            return None
+        if not -90 <= latitude <= 90 or not -180 <= longitude <= 180:
+            return None
+        return latitude, longitude
+
     @property
-    def latitude(self):
+    def latitude(self) -> float | None:
+        """Return latitude when Gluetun provides valid coordinates."""
+        coordinates = self._coordinates()
+        return coordinates[0] if coordinates else None
+
+    @property
+    def longitude(self) -> float | None:
+        """Return longitude when Gluetun provides valid coordinates."""
+        coordinates = self._coordinates()
+        return coordinates[1] if coordinates else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Expose public IP and location details as tracker attributes."""
         data = self.coordinator.data
-        if isinstance(data, dict):
-            location = data.get("location")
-            if location and isinstance(location, str) and "," in location:
-                try:
-                    lat, _ = location.split(",", 1)
-                    return float(lat)
-                except (ValueError, AttributeError):
-                    return None
-        return None
-
-    @property
-    def longitude(self):
-        data = self.coordinator.data
-        if isinstance(data, dict):
-            location = data.get("location")
-            if location and isinstance(location, str) and "," in location:
-                try:
-                    _, lon = location.split(",", 1)
-                    return float(lon)
-                except (ValueError, AttributeError):
-                    return None
-        return None
-
-    @property
-    def extra_state_attributes(self):
-        data = self.coordinator.data
-        if isinstance(data, dict):
-            return {
-                "public_ip": data.get("public_ip"),
-                "city": data.get("city"),
-                "country": data.get("country"),
-                "region": data.get("region"),
-                "organization": data.get("organization"),
-            }
-        return {}
-
-    @property
-    def should_poll(self):
-        return False
-
-    @property
-    def available(self):
-        return self.coordinator.last_update_success
-
-    async def async_added_to_hass(self):
-        self.async_on_remove(
-            self.coordinator.async_add_listener(self.async_write_ha_state)
-        )
+        return {
+            key: data.get(key)
+            for key in ("public_ip", "city", "country", "region", "organization")
+            if data.get(key) is not None
+        }
