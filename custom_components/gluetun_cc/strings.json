@@ -3,20 +3,32 @@
     "step": {
       "user": {
         "data": {
-          "instance_name": "Instance Name",
-          "base_url": "Base URL",
-          "api_key": "API Key (optional)",
-          "tunnel_name": "Tunnel Name (optional)"
+          "instance_name": "Instance name",
+          "base_url": "HTTP Control Server URL",
+          "api_key": "API key (optional)",
+          "tunnel_name": "Tunnel name (optional)"
         },
-        "description": "Enter your Gluetun HTTP Control Server details."
+        "description": "Connect to the Gluetun HTTP Control Server. The URL must be reachable from Home Assistant.",
+        "error": {
+          "cannot_connect": "Unable to connect. Check the URL and that the Control Server is reachable.",
+          "invalid_auth": "Authentication failed. Check the API key.",
+          "invalid_response": "The Control Server returned an unexpected response.",
+          "invalid_url": "Enter a valid HTTP or HTTPS URL."
+        }
       },
       "reconfigure": {
         "data": {
-          "base_url": "Base URL",
-          "api_key": "API Key (optional)",
-          "tunnel_name": "Tunnel Name (optional)"
+          "base_url": "HTTP Control Server URL",
+          "api_key": "API key (optional)",
+          "tunnel_name": "Tunnel name (optional)"
         },
-        "description": "Update your Gluetun HTTP Control Server connection details."
+        "description": "Update the Gluetun HTTP Control Server connection details.",
+        "error": {
+          "cannot_connect": "Unable to connect. Check the URL and that the Control Server is reachable.",
+          "invalid_auth": "Authentication failed. Check the API key.",
+          "invalid_response": "The Control Server returned an unexpected response.",
+          "invalid_url": "Enter a valid HTTP or HTTPS URL."
+        }
       }
     }
   }

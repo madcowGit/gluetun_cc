@@ -1,62 +1,55 @@
-﻿# Gluetun status – Home Assistant custom component
+# Gluetun for Home Assistant
 
-This is a Home Assistant custom integration that reads VPN status information from a [Gluetun](https://github.com/qdm12/gluetun) instance via its **HTTP Control Server**. It exposes sensors for:
-- **Public IP address** from `/v1/publicip/ip`
-- **Country** from `/v1/publicip/ip`
-- **City** from `/v1/publicip/ip`
-- **Location** from `/v1/publicip/ip`
-- **Organization** from `/v1/publicip/ip`
-- **Postal Code** from `/v1/publicip/ip`
-- **Public Ip** from `/v1/publicip/ip`
-- **Region** from `/v1/publicip/ip`
-- **Status** from `/v1/openvpn/status`
-- **Timezone** from `/v1/publicip/ip`
-> Ensure Gluetun’s HTTP Control Server is enabled and reachable from Home Assistant. (These endpoints reflect the project’s existing behavior.)
+A custom Home Assistant integration for monitoring and controlling a [Gluetun](https://github.com/qdm12/gluetun) instance through its HTTP Control Server.
 
-## Installation
+## Features
 
-### HACS (as a custom repository)
-
-1. In Home Assistant, open **HACS → Integrations**.  
-2. Click **⋯ (three dots)** → **Custom repositories**.  
-3. Paste `https://github.com/madcowGit/gluetun_cc` and select **Type: Integration**, then click **Add**.  
-4. Back in HACS, search for **Gluetun (custom component)** and click **Install**.  
-5. Restart Home Assistant when prompted.
-
-### Manual
-
-Copy the `custom_components/gluetun_cc/` directory into your HA `config/custom_components/` and restart.
+- VPN status sensor.
+- Public IP, region, country, city, location, organization, postal code, and timezone sensors.
+- Approximate VPN geolocation device tracker when Gluetun returns valid coordinates.
+- Switch to start or stop the VPN using the Control Server API.
+- Multiple Gluetun instances with separately configurable URLs and optional API keys.
+- Automatic polling and recovery when the Control Server is temporarily unavailable.
 
 ## Requirements
 
-- A running **Gluetun** with the **HTTP Control Server** enabled and accessible (e.g., `http://<gluetun-host>:8000`).
+- Gluetun with the HTTP Control Server enabled.
+- The Control Server URL must be reachable from Home Assistant (for example, `http://gluetun:8000`).
+- Configure authentication in Gluetun when exposing the Control Server beyond a trusted network. The integration sends the optional API key in the `X-API-Key` header.
 
-## Configuration (UI)
+> The HTTP Control Server is a privileged control interface. Do not expose it directly to the internet; use a trusted network and appropriate authentication.
 
-1. Go to **Settings → Devices & services → Add integration** and search for **Gluetun (custom component)**.  
-2. Enter the HTTP Control Server details.  
-3. Finish the flow; entities for VPN status, public IP, and country (if available) will be created.
+## Installation
+
+### HACS
+
+1. In HACS, open **Integrations** and select **Custom repositories** from the menu.
+2. Add `https://github.com/madcowGit/gluetun_cc` with type **Integration**.
+3. Install **Gluetun** and restart Home Assistant.
+
+### Manual
+
+Copy `custom_components/gluetun_cc/` into your Home Assistant `config/custom_components/` directory, then restart Home Assistant.
+
+## Configuration
+
+1. Go to **Settings → Devices & services → Add integration** and search for **Gluetun**.
+2. Enter an instance name, the HTTP Control Server URL, and optionally the API key and a display name.
+3. The integration checks the URL and credentials against `/v1/vpn/status` before saving.
+4. Change the connection details later using **Configure** on the integration entry.
+
+The default URL is `http://localhost:8111`. Use the host and port that Home Assistant can reach, not necessarily the address used by the Gluetun container itself.
+
+## Entities
+
+Entities are grouped under a Gluetun device. Status updates every minute; public IP and geolocation data update every five minutes. If a response field is missing, its sensor has no value. The location tracker uses coordinates only when the server provides valid latitude/longitude values.
+
+The VPN switch calls `PUT /v1/vpn/status` with `{"status":"running"}` or `{"status":"stopped"}`. This requires a Control Server configuration that permits changing the VPN status. A failed request raises a Home Assistant action error instead of silently appearing successful.
+
 ## Acknowledgments
 
-- Thanks to **qdm12** for the Gluetun project.
+Thanks to [qdm12](https://github.com/qdm12) for the Gluetun project.
 
-# Apache License
+## License
 
-Version 2.0, January 2004
-
-http://www.apache.org/licenses/
-
-Copyright 2025 madcowGit
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-
+Apache License 2.0. See [LICENSE](LICENSE).

@@ -1,91 +1,84 @@
+"""Switch platform for Gluetun VPN control."""
+
+from __future__ import annotations
+
+from typing import Any
+
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-import aiohttp
-import logging
+from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, CONF_INSTANCE_NAME, CONF_BASE_URL, CONF_API_KEY, CONF_TUNNEL_NAME
-
-_LOGGER = logging.getLogger(__name__)
-
-
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities):
-    instance_name = entry.data.get(CONF_INSTANCE_NAME, "gluetun")
-    base_url = entry.data.get(CONF_BASE_URL, "http://localhost:8111")
-    api_key = entry.data.get(CONF_API_KEY, "")
-    tunnel_name = entry.data.get(CONF_TUNNEL_NAME, "")
-    display_name = tunnel_name if tunnel_name else instance_name
-
-    coordinator = hass.data[DOMAIN][entry.entry_id].get("status_coordinator")
-
-    if coordinator is None:
-        _LOGGER.warning("Status coordinator not available for switch, skipping")
-        return
-
-    async_add_entities([
-        GluetunSwitch(coordinator, display_name, base_url, api_key),
-    ])
+from . import _entry_settings
+from .const import DOMAIN
+from .coordinator import GluetunCoordinator
 
 
-class GluetunSwitch(SwitchEntity):
-    def __init__(self, coordinator, display_name, base_url, api_key):
-        self.coordinator = coordinator
-        self.instance_name = display_name
-        self.base_url = base_url
-        self.api_key = api_key
+async def async_setup_entry(
+    hass: HomeAssistant, entry: ConfigEntry, async_add_entities
+) -> None:
+    """Set up the Gluetun VPN switch."""
+    instance_name, _, _, tunnel_name = _entry_settings(entry)
+    display_name = tunnel_name or instance_name
+    data = hass.data[DOMAIN][entry.entry_id]
+    coordinator: GluetunCoordinator = data["status_coordinator"]
+    async_add_entities(
+        [
+            GluetunSwitch(
+                coordinator,
+                display_name,
+                DeviceInfo(
+                    identifiers={(DOMAIN, entry.entry_id)},
+                    name=display_name,
+                    manufacturer="Gluetun",
+                    configuration_url=data["base_url"],
+                ),
+            )
+        ]
+    )
+
+
+class GluetunSwitch(CoordinatorEntity[GluetunCoordinator], SwitchEntity):
+    """Control whether the Gluetun VPN is running."""
+
+    _attr_icon = "mdi:vpn"
+
+    def __init__(
+        self,
+        coordinator: GluetunCoordinator,
+        display_name: str,
+        device_info: DeviceInfo,
+    ) -> None:
+        super().__init__(coordinator)
         self._attr_name = f"Gluetun {display_name} VPN"
         self._attr_unique_id = f"gluetun_{display_name}_switch"
-        self._attr_icon = "mdi:vpn"
+        self._attr_device_info = device_info
 
     @property
-    def is_on(self):
-        data = self.coordinator.data
-        if isinstance(data, dict):
-            return data.get("status") == "running"
-        return False
+    def is_on(self) -> bool:
+        """Return whether the VPN is running."""
+        return self.coordinator.data.get("status") == "running"
 
     @property
-    def extra_state_attributes(self):
-        data = self.coordinator.data
-        if isinstance(data, dict):
-            return {"status": data.get("status", "unknown")}
-        return {"status": "unknown"}
+    def extra_state_attributes(self) -> dict[str, str]:
+        """Expose the raw VPN status for diagnostics."""
+        status: Any = self.coordinator.data.get("status", "unknown")
+        return {"status": str(status)}
 
-    async def async_turn_on(self, **kwargs):
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        """Start the VPN through Gluetun's control API."""
         await self._set_vpn_status("running")
 
-    async def async_turn_off(self, **kwargs):
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        """Stop the VPN through Gluetun's control API."""
         await self._set_vpn_status("stopped")
 
-    async def _set_vpn_status(self, status):
-        url = f"{self.base_url.rstrip('/')}/v1/vpn/status"
-        headers = {"Content-Type": "application/json"}
-        if self.api_key:
-            headers["X-API-Key"] = self.api_key
-        payload = {"status": status}
+    async def _set_vpn_status(self, status: str) -> None:
+        """Update Gluetun and refresh the reported state."""
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.put(url, json=payload, headers=headers) as response:
-                    if response.status != 200:
-                        _LOGGER.error(
-                            "Failed to set VPN status to %s: HTTP %s",
-                            status,
-                            response.status,
-                        )
-                        return
+            await self.coordinator.api.set_vpn_status(status)
             await self.coordinator.async_request_refresh()
-        except aiohttp.ClientError as err:
-            _LOGGER.error("Error setting VPN status to %s: %s", status, err)
-
-    @property
-    def should_poll(self):
-        return False
-
-    @property
-    def available(self):
-        return self.coordinator.last_update_success
-
-    async def async_added_to_hass(self):
-        self.async_on_remove(
-            self.coordinator.async_add_listener(self.async_write_ha_state)
-        )
+        except HomeAssistantError as err:
+            raise HomeAssistantError(f"Unable to set Gluetun VPN status: {err}") from err
