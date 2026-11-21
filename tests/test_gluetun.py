@@ -9,8 +9,7 @@ import voluptuous as vol
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
-from custom_components.gluetun_cc import _entry_settings
-from custom_components.gluetun_cc import config_flow, coordinator
+from custom_components.gluetun_cc import _entry_settings, config_flow, coordinator
 from custom_components.gluetun_cc.const import (
     CONF_INSTANCE_NAME,
     DEFAULT_BASE_URL,
@@ -107,15 +106,15 @@ def test_validate_connection_sends_api_key(monkeypatch):
         (200, ["unexpected", "array"], "invalid_response"),
     ],
 )
-def test_validate_connection_reports_server_errors(monkeypatch, status, json_data, expected):
+def test_validate_connection_reports_server_errors(
+    monkeypatch, status, json_data, expected
+):
     session = MagicMock()
     session.get.return_value = _response_context(status, json_data=json_data)
     monkeypatch.setattr(config_flow, "async_get_clientsession", lambda hass: session)
 
     assert (
-        asyncio.run(
-            config_flow._validate_connection(MagicMock(), "http://gluetun", "")
-        )
+        asyncio.run(config_flow._validate_connection(MagicMock(), "http://gluetun", ""))
         == expected
     )
 

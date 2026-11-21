@@ -69,7 +69,10 @@ class GluetunTrackerEntity(
             return None
         try:
             latitude_text, longitude_text = location.split(",", maxsplit=1)
-            latitude, longitude = float(latitude_text.strip()), float(longitude_text.strip())
+            latitude, longitude = (
+                float(latitude_text.strip()),
+                float(longitude_text.strip()),
+            )
         except (ValueError, TypeError):
             return None
         if not -90 <= latitude <= 90 or not -180 <= longitude <= 180:

@@ -8,7 +8,6 @@ from urllib.parse import urlsplit
 import aiohttp
 import voluptuous as vol
 from homeassistant import config_entries
-from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
@@ -131,6 +130,9 @@ class GluetunConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     errors={"base": error},
                 )
 
+            title_name = tunnel_name or entry.data.get(
+                CONF_INSTANCE_NAME, DEFAULT_INSTANCE_NAME
+            )
             return self.async_update_reload_and_abort(
                 entry,
                 data_updates={
@@ -138,7 +140,7 @@ class GluetunConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     CONF_API_KEY: api_key,
                     CONF_TUNNEL_NAME: tunnel_name,
                 },
-                title=f"Gluetun - {tunnel_name or entry.data.get(CONF_INSTANCE_NAME, DEFAULT_INSTANCE_NAME)}",
+                title=f"Gluetun - {title_name}",
             )
 
         return self.async_show_form(

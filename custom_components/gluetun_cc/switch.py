@@ -81,4 +81,6 @@ class GluetunSwitch(CoordinatorEntity[GluetunCoordinator], SwitchEntity):
             await self.coordinator.api.set_vpn_status(status)
             await self.coordinator.async_request_refresh()
         except HomeAssistantError as err:
-            raise HomeAssistantError(f"Unable to set Gluetun VPN status: {err}") from err
+            raise HomeAssistantError(
+                f"Unable to set Gluetun VPN status: {err}"
+            ) from err

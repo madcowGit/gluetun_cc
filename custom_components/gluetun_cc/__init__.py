@@ -35,9 +35,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     instance_name, base_url, api_key, tunnel_name = _entry_settings(entry)
     hass.data.setdefault(DOMAIN, {})
 
-    status_coordinator = GluetunCoordinator(
-        hass, base_url, instance_name, api_key
-    )
+    status_coordinator = GluetunCoordinator(hass, base_url, instance_name, api_key)
     public_ip_coordinator = GluetunPublicIpCoordinator(
         hass, base_url, instance_name, api_key
     )

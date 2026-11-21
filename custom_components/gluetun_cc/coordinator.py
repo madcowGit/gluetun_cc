@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
 from typing import Any
@@ -60,7 +59,7 @@ class GluetunApi:
                 if not isinstance(data, dict):
                     raise UpdateFailed("Gluetun returned an unexpected response")
                 return data
-        except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+        except (aiohttp.ClientError, TimeoutError) as err:
             raise UpdateFailed(f"Unable to connect to Gluetun: {err}") from err
 
     async def set_vpn_status(self, status: str) -> None:
@@ -76,7 +75,7 @@ class GluetunApi:
                     raise HomeAssistantError(
                         f"Gluetun could not set VPN status (HTTP {response.status})"
                     )
-        except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+        except (aiohttp.ClientError, TimeoutError) as err:
             raise HomeAssistantError("Unable to connect to Gluetun") from err
 
 

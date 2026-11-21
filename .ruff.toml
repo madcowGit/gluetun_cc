@@ -1,10 +1,18 @@
 # The contents of this file is based on https://github.com/home-assistant/core/blob/dev/pyproject.toml
 
-target-version = "py314"
+target-version = "py312"
 
 [lint]
 select = [
-    "ALL",
+    "ASYNC",
+    "B",
+    "E",
+    "F",
+    "I",
+    "PERF",
+    "RUF",
+    "SIM",
+    "UP",
 ]
 
 ignore = [

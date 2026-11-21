@@ -47,7 +47,9 @@ async def async_setup_entry(
         [
             GluetunStatusSensor(status_coordinator, display_name, device_info),
             *(
-                GluetunPublicIpSensor(ip_coordinator, description, display_name, device_info)
+                GluetunPublicIpSensor(
+                    ip_coordinator, description, display_name, device_info
+                )
                 for description in PUBLIC_IP_SENSORS
             ),
         ]
